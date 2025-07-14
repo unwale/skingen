@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package task.v1;
+
+option go_package = "/services/task-service/generated/task/v1";
+
+import "google/protobuf/timestamp.proto";
+
+service TaskService {
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+}
+
+message CreateTaskRequest {
+  string prompt = 1;
+}
+
+message CreateTaskResponse {
+  uint32 task_id = 1;
+  string status = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
