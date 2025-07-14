@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/unwale/skingen/gateway/internal/api/rest"
-	"github.com/unwale/skingen/gateway/internal/config"
-	"github.com/unwale/skingen/gateway/internal/core"
+	"github.com/unwale/skingen/services/gateway/internal/api/rest"
+	"github.com/unwale/skingen/services/gateway/internal/config"
+	"github.com/unwale/skingen/services/gateway/internal/core"
 )
 
 func main() {

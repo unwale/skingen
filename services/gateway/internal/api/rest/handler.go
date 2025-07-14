@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
-	"github.com/unwale/skingen/gateway/internal/core"
+	"github.com/unwale/skingen/services/gateway/internal/core"
 )
 
 type gatewayHandler struct {
