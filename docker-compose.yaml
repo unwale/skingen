@@ -1,8 +1,8 @@
 services:
   gateway:
     build:
-      context: ./gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/gateway/Dockerfile
     ports:
       - "${GATEWAY_PORT}:${GATEWAY_PORT}"
     environment:
