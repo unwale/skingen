@@ -35,9 +35,9 @@ func (h *gatewayHandler) CreateTaskHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	taskID, err := h.service.CreateTask(req.Prompt)
+	taskID, err := h.service.CreateTask(r.Context(), req.Prompt)
 	if err != nil {
-		http.Error(w, "Failed to create task", http.StatusInternalServerError)
+		http.Error(w, "Failed to create task: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

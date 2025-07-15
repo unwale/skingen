@@ -5,9 +5,12 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/unwale/skingen/services/gateway/internal/adapters"
 	"github.com/unwale/skingen/services/gateway/internal/api/rest"
 	"github.com/unwale/skingen/services/gateway/internal/config"
 	"github.com/unwale/skingen/services/gateway/internal/core"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -16,7 +19,19 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	service := core.NewGatewayService()
+	conn, err := grpc.NewClient(cfg.TaskServiceUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to connect to task service: %v", err)
+	}
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Fatalf("Failed to close connection: %v", err)
+		}
+	}()
+
+	taskServiceAdapter := adapters.NewTaskServiceAdapter(conn)
+
+	service := core.NewGatewayService(taskServiceAdapter)
 
 	httpHandler := rest.NewGatewayHandler(service)
 

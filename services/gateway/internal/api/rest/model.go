@@ -5,5 +5,5 @@ type CreateTaskRequest struct {
 }
 
 type CreateTaskResponse struct {
-	TaskID string `json:"task_id"`
+	TaskID int `json:"task_id"`
 }
