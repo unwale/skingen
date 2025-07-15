@@ -13,6 +13,10 @@ type TaskDB struct {
 	ResultUrl string `gorm:"type:text"`
 }
 
+func (t *TaskDB) TableName() string {
+	return "tasks"
+}
+
 func (t *TaskDB) toDomain() *domain.Task {
 	return &domain.Task{
 		ID:        t.ID,
