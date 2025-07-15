@@ -14,8 +14,8 @@ services:
       - POSTGRES_PASSWORD=${TASK_SERVICE_POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     networks:
       - skingen-network
   gateway:
@@ -26,9 +26,21 @@ services:
       - "${GATEWAY_PORT}:${GATEWAY_PORT}"
     environment:
       - PORT=${GATEWAY_PORT}
+      - TASK_SERVICE_URL=task-service:${TASK_SERVICE_PORT}
     networks:
       - skingen-network
-
+    depends_on:
+      - task-service
+  migrator:
+    image: migrate/migrate:latest
+    command: [ "-path", "/migrations", "-database", "postgres://${ROOT_POSTGRES_USER}:${ROOT_POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable", "up" ]
+    volumes:
+      - ./database-setup/migrations:/migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - skingen-network
   postgres:
     image: postgres:16-alpine
     ports:
