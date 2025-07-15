@@ -13,6 +13,9 @@ services:
       - POSTGRES_USER=${TASK_SERVICE_POSTGRES_USER}
       - POSTGRES_PASSWORD=${TASK_SERVICE_POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - skingen-network
   gateway:
@@ -26,6 +29,30 @@ services:
     networks:
       - skingen-network
 
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${ROOT_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${ROOT_POSTGRES_PASSWORD}
+      - TASK_SERVICE_POSTGRES_USER=${TASK_SERVICE_POSTGRES_USER}
+      - TASK_SERVICE_POSTGRES_PASSWORD=${TASK_SERVICE_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database-setup/init-task-service.sh:/docker-entrypoint-initdb.d/01-init-roles-and-schemas.sh
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${ROOT_POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skingen-network
+
 networks:
   skingen-network:
     driver: bridge
+
+volumes:
+  postgres_data:
