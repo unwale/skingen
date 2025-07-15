@@ -23,7 +23,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to task service: %v", err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Fatalf("Failed to close connection: %v", err)
+		}
+	}()
 
 	taskServiceAdapter := adapters.NewTaskServiceAdapter(conn)
 
