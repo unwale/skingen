@@ -5,12 +5,12 @@ import (
 )
 
 type Config struct {
-	Port             string `env:"PORT"`
-	PostgresHost     string `env:"POSTGRES_HOST"`
-	PostgresPort     string `env:"POSTGRES_PORT"`
-	PostgresUser     string `env:"POSTGRES_USER"`
-	PostgresPassword string `env:"POSTGRES_PASSWORD"`
-	PostgresDB       string `env:"POSTGRES_DB"`
+	Port             string `env:"PORT,required"`
+	PostgresHost     string `env:"POSTGRES_HOST,required"`
+	PostgresPort     string `env:"POSTGRES_PORT,required"`
+	PostgresUser     string `env:"POSTGRES_USER,required"`
+	PostgresPassword string `env:"POSTGRES_PASSWORD,required"`
+	PostgresDB       string `env:"POSTGRES_DB,required"`
 }
 
 func LoadConfig() (*Config, error) {
