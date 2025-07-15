@@ -27,7 +27,7 @@ func main() {
 	}
 
 	repo := repository.NewTaskRepository(db)
-	service := core.NewTaskService(&repo)
+	service := core.NewTaskService(repo)
 	handler := grpc.NewHandler(service)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.Port))

@@ -7,16 +7,16 @@ import (
 )
 
 type taskServiceImpl struct {
-	repo *TaskRepository
+	repo TaskRepository
 }
 
-func NewTaskService(repo *TaskRepository) TaskService {
+func NewTaskService(repo TaskRepository) TaskService {
 	return &taskServiceImpl{repo: repo}
 }
 
 func (s *taskServiceImpl) CreateTask(ctx context.Context, prompt string) (domain.Task, error) {
 	task := domain.Task{Prompt: prompt}
-	savedTask, err := (*s.repo).SaveTask(ctx, task)
+	savedTask, err := s.repo.SaveTask(ctx, task)
 	if err != nil {
 		return domain.Task{}, err
 	}
