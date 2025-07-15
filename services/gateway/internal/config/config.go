@@ -5,8 +5,8 @@ import (
 )
 
 type Config struct {
-	Port           string `env:"PORT"`
-	TaskServiceUrl string `env:"TASK_SERVICE_URL"`
+	Port           string `env:"PORT,required"`
+	TaskServiceUrl string `env:"TASK_SERVICE_URL,required"`
 }
 
 func LoadConfig() (*Config, error) {
