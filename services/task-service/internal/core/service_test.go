@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+	"github.com/unwale/skingen/services/task-service/internal/config"
 	"github.com/unwale/skingen/services/task-service/internal/domain"
 )
 
@@ -29,12 +30,17 @@ func (m *mockPublisher) Publish(ctx context.Context, body []byte, queueName stri
 func TestCreateTask(t *testing.T) {
 	mockRepo := new(mockRepository)
 	mockPublisher := new(mockPublisher)
-	taskService := NewTaskService(mockRepo, mockPublisher)
+	queueConfig := config.QueueConfig{
+		GenerateImageQueue: "generate_image_queue",
+		TaskResultQueue:    "task_result_queue",
+	}
+	taskService := NewTaskService(mockRepo, mockPublisher, queueConfig)
 
 	prompt := "test prompt"
 	expectedTask := domain.Task{ID: 1, Prompt: prompt}
 
 	mockRepo.On("SaveTask", mock.Anything, mock.AnythingOfType("domain.Task")).Return(expectedTask, nil)
+	mockPublisher.On("Publish", mock.Anything, mock.AnythingOfType("[]uint8"), queueConfig.GenerateImageQueue).Return(nil)
 
 	task, err := taskService.CreateTask(context.Background(), prompt)
 	if err != nil {
