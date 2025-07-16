@@ -54,7 +54,9 @@ func (c *MessageConsumer) Start() error {
 				}
 				continue
 			}
-			msg.Ack(false)
+			if err := msg.Ack(false); err != nil {
+				log.Printf("Error acknowledging message: %v", err)
+			}
 		}
 	}()
 
