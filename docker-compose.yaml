@@ -14,6 +14,8 @@ services:
       - POSTGRES_PASSWORD=${TASK_SERVICE_POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@queue:${RABBITMQ_PORT}
+      - GENERATE_IMAGE_QUEUE=${GENERATE_IMAGE_QUEUE}
+      - TASK_RESULT_QUEUE=${TASK_RESULT_QUEUE}
     depends_on:
       migrator:
         condition: service_completed_successfully
