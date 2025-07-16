@@ -16,7 +16,7 @@ func TestLoadConfig(t *testing.T) {
 		os.Setenv("POSTGRES_USER", "user")         //nolint:errcheck
 		os.Setenv("POSTGRES_PASSWORD", "password") //nolint:errcheck
 		os.Setenv("POSTGRES_DB", "skingen")        //nolint:errcheck
-
+		os.Setenv("RABBITMQ_URL", "url")           //nolint:errcheck
 		cfg, err := LoadConfig()
 
 		assert.NoError(t, err)

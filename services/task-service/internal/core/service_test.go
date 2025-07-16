@@ -17,9 +17,19 @@ func (m *mockRepository) SaveTask(ctx context.Context, task domain.Task) (domain
 	return args.Get(0).(domain.Task), args.Error(1)
 }
 
+type mockPublisher struct {
+	mock.Mock
+}
+
+func (m *mockPublisher) Publish(ctx context.Context, body []byte, queueName string) error {
+	args := m.Called(ctx, body, queueName)
+	return args.Error(0)
+}
+
 func TestCreateTask(t *testing.T) {
 	mockRepo := new(mockRepository)
-	taskService := NewTaskService(mockRepo)
+	mockPublisher := new(mockPublisher)
+	taskService := NewTaskService(mockRepo, mockPublisher)
 
 	prompt := "test prompt"
 	expectedTask := domain.Task{ID: 1, Prompt: prompt}
