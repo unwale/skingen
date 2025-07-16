@@ -12,6 +12,12 @@ type Config struct {
 	PostgresPassword string `env:"POSTGRES_PASSWORD,required"`
 	PostgresDB       string `env:"POSTGRES_DB,required"`
 	RabbitMQUrl      string `env:"RABBITMQ_URL,required"`
+	QueueConfig      QueueConfig
+}
+
+type QueueConfig struct {
+	GenerateImageQueue string `env:"GENERATE_IMAGE_QUEUE,required,notEmpty"`
+	TaskResultQueue    string `env:"TASK_RESULT_QUEUE,required,notEmpty"`
 }
 
 func LoadConfig() (*Config, error) {

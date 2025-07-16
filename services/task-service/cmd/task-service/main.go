@@ -33,7 +33,7 @@ func main() {
 
 	queuePublisher := messaging.NewRabbitMQPublisher(queueManager)
 	repo := repository.NewTaskRepository(db)
-	service := core.NewTaskService(repo, queuePublisher)
+	service := core.NewTaskService(repo, queuePublisher, cfg.QueueConfig)
 	handler := grpc.NewHandler(service)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.Port))
