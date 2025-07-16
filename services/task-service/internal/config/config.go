@@ -11,6 +11,7 @@ type Config struct {
 	PostgresUser     string `env:"POSTGRES_USER,required"`
 	PostgresPassword string `env:"POSTGRES_PASSWORD,required"`
 	PostgresDB       string `env:"POSTGRES_DB,required"`
+	RabbitMQUrl      string `env:"RABBITMQ_URL,required"`
 }
 
 func LoadConfig() (*Config, error) {

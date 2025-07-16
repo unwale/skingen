@@ -13,3 +13,7 @@ type TaskService interface {
 type TaskRepository interface {
 	SaveTask(ctx context.Context, task domain.Task) (domain.Task, error)
 }
+
+type MessagePublisher interface {
+	Publish(ctx context.Context, body []byte, queueName string) error
+}

@@ -7,11 +7,15 @@ import (
 )
 
 type taskServiceImpl struct {
-	repo TaskRepository
+	repo      TaskRepository
+	publisher MessagePublisher
 }
 
-func NewTaskService(repo TaskRepository) TaskService {
-	return &taskServiceImpl{repo: repo}
+func NewTaskService(repo TaskRepository, publisher MessagePublisher) TaskService {
+	return &taskServiceImpl{
+		repo:      repo,
+		publisher: publisher,
+	}
 }
 
 func (s *taskServiceImpl) CreateTask(ctx context.Context, prompt string) (domain.Task, error) {
