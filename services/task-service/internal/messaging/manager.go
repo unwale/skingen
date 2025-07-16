@@ -47,7 +47,7 @@ func (rm *RabbitMQManager) reconnect() {
 	}
 }
 
-func (rm *RabbitMQManager) GetChannel() (*amqp091.Channel, error) {
+func (rm *RabbitMQManager) GetChannel() (AMQPChannel, error) {
 	if rm.connection == nil || rm.connection.IsClosed() {
 		return nil, errors.New("connection is not open")
 	}

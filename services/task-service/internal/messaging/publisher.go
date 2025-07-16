@@ -10,10 +10,10 @@ import (
 )
 
 type RabbitMQPublisher struct {
-	manager *RabbitMQManager
+	manager ChannelProvider
 }
 
-func NewRabbitMQPublisher(manager *RabbitMQManager) *RabbitMQPublisher {
+func NewRabbitMQPublisher(manager ChannelProvider) *RabbitMQPublisher {
 	return &RabbitMQPublisher{manager: manager}
 }
 
