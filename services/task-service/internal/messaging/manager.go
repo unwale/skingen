@@ -57,6 +57,6 @@ func (rm *RabbitMQManager) GetChannel() (*amqp091.Channel, error) {
 func (rm *RabbitMQManager) Close() {
 	if rm.connection != nil && !rm.connection.IsClosed() {
 		log.Println("Closing RabbitMQ connection")
-		rm.connection.Close()
+		rm.connection.Close() //nolint:errcheck
 	}
 }

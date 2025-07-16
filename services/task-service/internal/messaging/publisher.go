@@ -22,7 +22,11 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, body []byte, queueName 
 	if err != nil {
 		return err
 	}
-	defer ch.Close()
+	defer func() {
+		if err := ch.Close(); err != nil {
+			log.Printf("Failed to close channel: %v", err)
+		}
+	}()
 
 	_, err = ch.QueueDeclare(
 		queueName,
