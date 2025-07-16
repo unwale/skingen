@@ -18,6 +18,16 @@ func (m *mockRepository) SaveTask(ctx context.Context, task domain.Task) (domain
 	return args.Get(0).(domain.Task), args.Error(1)
 }
 
+func (m *mockRepository) GetTaskByID(ctx context.Context, id uint) (domain.Task, error) {
+	args := m.Called(ctx, id)
+	return args.Get(0).(domain.Task), args.Error(1)
+}
+
+func (m *mockRepository) UpdateTask(ctx context.Context, task domain.Task) (domain.Task, error) {
+	args := m.Called(ctx, task)
+	return args.Get(0).(domain.Task), args.Error(1)
+}
+
 type mockPublisher struct {
 	mock.Mock
 }

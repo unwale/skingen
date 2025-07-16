@@ -41,6 +41,21 @@ func (m *MockAMQPChannel) PublishWithContext(ctx context.Context, exchange, key 
 	return callArgs.Error(0)
 }
 
+func (m *MockAMQPChannel) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp091.Table) (<-chan amqp091.Delivery, error) {
+	callArgs := m.Called(queue, consumer, autoAck, exclusive, noLocal, noWait, args)
+	return callArgs.Get(0).(<-chan amqp091.Delivery), callArgs.Error(1)
+}
+
+func (m *MockAMQPChannel) Ack(tag uint64, multiple bool) error {
+	args := m.Called(tag, multiple)
+	return args.Error(0)
+}
+
+func (m *MockAMQPChannel) Nack(tag uint64, multiple, requeue bool) error {
+	args := m.Called(tag, multiple, requeue)
+	return args.Error(0)
+}
+
 func TestPublish(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {

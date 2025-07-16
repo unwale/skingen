@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/unwale/skingen/pkg/contracts"
 	pb "github.com/unwale/skingen/services/task-service/generated/task/v1"
 	"github.com/unwale/skingen/services/task-service/internal/domain"
 )
@@ -16,6 +17,11 @@ type mockTaskService struct {
 
 func (m *mockTaskService) CreateTask(ctx context.Context, prompt string) (domain.Task, error) {
 	args := m.Called(ctx, prompt)
+	return args.Get(0).(domain.Task), args.Error(1)
+}
+
+func (m *mockTaskService) ProcessTaskResult(ctx context.Context, event contracts.GenerateImageEvent) (domain.Task, error) {
+	args := m.Called(ctx, event)
 	return args.Get(0).(domain.Task), args.Error(1)
 }
 
