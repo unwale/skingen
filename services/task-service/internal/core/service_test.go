@@ -4,7 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/unwale/skingen/pkg/contracts"
 	"github.com/unwale/skingen/services/task-service/internal/config"
 	"github.com/unwale/skingen/services/task-service/internal/domain"
 )
@@ -62,4 +64,71 @@ func TestCreateTask(t *testing.T) {
 	}
 
 	mockRepo.AssertExpectations(t)
+}
+
+func TestProcessTaskResult(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		mockRepo := new(mockRepository)
+		taskService := NewTaskService(mockRepo, nil, config.QueueConfig{})
+
+		event := contracts.GenerateImageEvent{
+			TaskID:   1,
+			Status:   domain.TaskStatusCompleted,
+			ImageURL: "image.png",
+		}
+		expectedTask := domain.Task{ID: 1, Status: domain.TaskStatusCompleted, ResultURL: event.ImageURL}
+
+		mockRepo.On("GetTaskByID", mock.Anything, event.TaskID).Return(expectedTask, nil)
+		mockRepo.On("UpdateTask", mock.Anything, expectedTask).Return(expectedTask, nil)
+
+		task, err := taskService.ProcessTaskResult(context.Background(), event)
+		assert.NoError(t, err)
+
+		assert.Equal(t, expectedTask.ID, task.ID)
+		assert.Equal(t, expectedTask.Status, task.Status)
+		assert.Equal(t, expectedTask.ResultURL, task.ResultURL)
+		assert.Equal(t, expectedTask.Prompt, task.Prompt)
+
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("task not found", func(t *testing.T) {
+		mockRepo := new(mockRepository)
+		taskService := NewTaskService(mockRepo, nil, config.QueueConfig{})
+
+		event := contracts.GenerateImageEvent{
+			TaskID: 1,
+			Status: domain.TaskStatusCompleted,
+		}
+
+		mockRepo.On("GetTaskByID", mock.Anything, event.TaskID).Return(domain.Task{}, assert.AnError)
+
+		task, err := taskService.ProcessTaskResult(context.Background(), event)
+		assert.Error(t, err)
+		assert.Equal(t, domain.Task{}, task)
+
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("update task error", func(t *testing.T) {
+		mockRepo := new(mockRepository)
+		taskService := NewTaskService(mockRepo, nil, config.QueueConfig{})
+
+		event := contracts.GenerateImageEvent{
+			TaskID: 1,
+			Status: domain.TaskStatusCompleted,
+		}
+		task := domain.Task{ID: 1, Status: domain.TaskStatusPending}
+		taskCompleted := domain.Task{ID: 1, Status: domain.TaskStatusCompleted}
+
+		mockRepo.On("GetTaskByID", mock.Anything, event.TaskID).Return(task, nil)
+		mockRepo.On("UpdateTask", mock.Anything, taskCompleted).Return(domain.Task{}, assert.AnError)
+
+		result, err := taskService.ProcessTaskResult(context.Background(), event)
+		assert.Error(t, err)
+		assert.Equal(t, domain.Task{}, result)
+
+		mockRepo.AssertExpectations(t)
+	})
+
 }
