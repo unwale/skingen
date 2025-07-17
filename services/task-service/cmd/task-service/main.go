@@ -36,6 +36,13 @@ func main() {
 	service := core.NewTaskService(repo, queuePublisher, cfg.QueueConfig)
 	handler := grpc.NewHandler(service)
 
+	taskResultConsumer := messaging.NewTaskResultConsumer(queueManager, service, cfg.QueueConfig)
+	go func() {
+		if err := taskResultConsumer.Start(); err != nil {
+			log.Fatalf("Failed to start message consumer: %v", err)
+		}
+	}()
+
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.Port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
