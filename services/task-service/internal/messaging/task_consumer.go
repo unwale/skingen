@@ -11,28 +11,40 @@ import (
 	"github.com/unwale/skingen/services/task-service/internal/core"
 )
 
-type MessageConsumer struct {
+type TaskResultConsumer struct {
 	manager     ChannelProvider
 	service     core.TaskService
 	queueConfig config.QueueConfig
 }
 
-func NewMessageConsumer(manager ChannelProvider, service core.TaskService, queueCfg config.QueueConfig) *MessageConsumer {
-	return &MessageConsumer{
+func NewTaskResultConsumer(manager ChannelProvider, service core.TaskService, queueCfg config.QueueConfig) *TaskResultConsumer {
+	return &TaskResultConsumer{
 		manager:     manager,
 		service:     service,
 		queueConfig: queueCfg,
 	}
 }
 
-func (c *MessageConsumer) Start() error {
+func (c *TaskResultConsumer) Start() error {
 	ch, err := c.manager.GetChannel()
 	if err != nil {
 		return err
 	}
 
+	_, err = ch.QueueDeclare(
+		c.queueConfig.TaskResultQueue,
+		true,  // durable
+		false, // auto-delete
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	if err != nil {
+		return err
+	}
+
 	msgs, err := ch.Consume(
-		c.queueConfig.GenerateImageQueue,
+		c.queueConfig.TaskResultQueue,
 		"",
 		true,
 		false,
@@ -63,7 +75,7 @@ func (c *MessageConsumer) Start() error {
 	return nil
 }
 
-func (c *MessageConsumer) handleMessage(msg amqp091.Delivery) error {
+func (c *TaskResultConsumer) handleMessage(msg amqp091.Delivery) error {
 	var event contracts.GenerateImageEvent
 	if err := json.Unmarshal(msg.Body, &event); err != nil {
 		return err
