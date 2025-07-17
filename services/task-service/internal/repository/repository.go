@@ -23,3 +23,19 @@ func (r *taskRepositoryImpl) SaveTask(ctx context.Context, task domain.Task) (do
 	}
 	return *taskDB.toDomain(), nil
 }
+
+func (r *taskRepositoryImpl) GetTaskByID(ctx context.Context, id uint) (domain.Task, error) {
+	var taskDB TaskDB
+	if err := r.db.WithContext(ctx).First(&taskDB, "id = ?", id).Error; err != nil {
+		return domain.Task{}, err
+	}
+	return *taskDB.toDomain(), nil
+}
+
+func (r *taskRepositoryImpl) UpdateTask(ctx context.Context, task domain.Task) (domain.Task, error) {
+	taskDB := fromDomain(&task)
+	if err := r.db.WithContext(ctx).Save(taskDB).Error; err != nil {
+		return domain.Task{}, err
+	}
+	return *taskDB.toDomain(), nil
+}

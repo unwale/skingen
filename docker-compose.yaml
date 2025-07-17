@@ -13,9 +13,14 @@ services:
       - POSTGRES_USER=${TASK_SERVICE_POSTGRES_USER}
       - POSTGRES_PASSWORD=${TASK_SERVICE_POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@queue:${RABBITMQ_PORT}
+      - GENERATE_IMAGE_QUEUE=${GENERATE_IMAGE_QUEUE}
+      - TASK_RESULT_QUEUE=${TASK_RESULT_QUEUE}
     depends_on:
       migrator:
         condition: service_completed_successfully
+      queue:
+        condition: service_healthy
     networks:
       - skingen-network
   gateway:
@@ -62,9 +67,28 @@ services:
     networks:
       - skingen-network
 
+  queue:
+    image: rabbitmq:3-management
+    ports:
+      - "${RABBITMQ_PORT}:${RABBITMQ_PORT}"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skingen-network
+
 networks:
   skingen-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  rabbitmq_data:

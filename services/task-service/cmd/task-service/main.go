@@ -12,6 +12,7 @@ import (
 	"github.com/unwale/skingen/services/task-service/internal/config"
 	"github.com/unwale/skingen/services/task-service/internal/core"
 	"github.com/unwale/skingen/services/task-service/internal/database"
+	"github.com/unwale/skingen/services/task-service/internal/messaging"
 	"github.com/unwale/skingen/services/task-service/internal/repository"
 )
 
@@ -21,14 +22,26 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	queueManager := messaging.NewRabbitMQManager(cfg.RabbitMQUrl)
+	queueManager.Connect()
+	defer queueManager.Close()
+
 	db, err := database.NewConnection(*cfg)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	queuePublisher := messaging.NewRabbitMQPublisher(queueManager)
 	repo := repository.NewTaskRepository(db)
-	service := core.NewTaskService(repo)
+	service := core.NewTaskService(repo, queuePublisher, cfg.QueueConfig)
 	handler := grpc.NewHandler(service)
+
+	taskResultConsumer := messaging.NewTaskResultConsumer(queueManager, service, cfg.QueueConfig)
+	go func() {
+		if err := taskResultConsumer.Start(); err != nil {
+			log.Fatalf("Failed to start message consumer: %v", err)
+		}
+	}()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.Port))
 	if err != nil {
