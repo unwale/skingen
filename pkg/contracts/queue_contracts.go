@@ -1,5 +1,12 @@
 package contracts
 
+const (
+	TaskStatusPending    = "pending"
+	TaskStatusInProgress = "in_progress"
+	TaskStatusCompleted  = "completed"
+	TaskStatusFailed     = "failed"
+)
+
 type GenerateImageCommand struct {
 	TaskID uint   `json:"task_id"`
 	Prompt string `json:"prompt"`

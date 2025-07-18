@@ -1,27 +1,24 @@
 package messaging
 
 import (
-	"context"
-	"encoding/json"
 	"log"
 
 	"github.com/rabbitmq/amqp091-go"
-	"github.com/unwale/skingen/pkg/contracts"
-	"github.com/unwale/skingen/services/task-service/internal/config"
-	"github.com/unwale/skingen/services/task-service/internal/core"
 )
 
+type MessageHandler func(msg amqp091.Delivery) error
+
 type TaskResultConsumer struct {
-	manager     ChannelProvider
-	service     core.TaskService
-	queueConfig config.QueueConfig
+	manager   ChannelProvider
+	queueName string
+	handler   MessageHandler
 }
 
-func NewTaskResultConsumer(manager ChannelProvider, service core.TaskService, queueCfg config.QueueConfig) *TaskResultConsumer {
+func NewTaskResultConsumer(manager ChannelProvider, queueName string, handler MessageHandler) *TaskResultConsumer {
 	return &TaskResultConsumer{
-		manager:     manager,
-		service:     service,
-		queueConfig: queueCfg,
+		manager:   manager,
+		queueName: queueName,
+		handler:   handler,
 	}
 }
 
@@ -32,7 +29,7 @@ func (c *TaskResultConsumer) Start() error {
 	}
 
 	_, err = ch.QueueDeclare(
-		c.queueConfig.TaskResultQueue,
+		c.queueName,
 		true,  // durable
 		false, // auto-delete
 		false, // exclusive
@@ -44,7 +41,7 @@ func (c *TaskResultConsumer) Start() error {
 	}
 
 	msgs, err := ch.Consume(
-		c.queueConfig.TaskResultQueue,
+		c.queueName,
 		"",
 		true,
 		false,
@@ -58,7 +55,7 @@ func (c *TaskResultConsumer) Start() error {
 
 	go func() {
 		for msg := range msgs {
-			err := c.handleMessage(msg)
+			err := c.handler(msg)
 			if err != nil {
 				log.Printf("Error handling message: %v", err)
 				if nackErr := ch.Nack(msg.DeliveryTag, false, true); nackErr != nil {
@@ -73,17 +70,4 @@ func (c *TaskResultConsumer) Start() error {
 	}()
 
 	return nil
-}
-
-func (c *TaskResultConsumer) handleMessage(msg amqp091.Delivery) error {
-	var event contracts.GenerateImageEvent
-	if err := json.Unmarshal(msg.Body, &event); err != nil {
-		return err
-	}
-
-	_, err := c.service.ProcessTaskResult(
-		context.Background(),
-		event,
-	)
-	return err
 }
