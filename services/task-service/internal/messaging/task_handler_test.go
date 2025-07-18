@@ -8,21 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/unwale/skingen/pkg/contracts"
-	"github.com/unwale/skingen/pkg/messaging"
 	"github.com/unwale/skingen/services/task-service/internal/domain"
 )
-
-type mockChannelProvider struct {
-	mock.Mock
-}
-
-func (m *mockChannelProvider) GetChannel() (messaging.AMQPChannel, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(messaging.AMQPChannel), args.Error(1)
-}
 
 type mockTaskService struct {
 	mock.Mock
