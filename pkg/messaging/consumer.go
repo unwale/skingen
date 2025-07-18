@@ -49,7 +49,7 @@ func (c *MessageConsumer) Start() error {
 	msgs, err := ch.Consume(
 		c.queueName,
 		c.consumerTag,
-		true,
+		false,
 		false,
 		false,
 		false,
