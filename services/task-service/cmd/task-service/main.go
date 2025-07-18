@@ -40,7 +40,7 @@ func main() {
 	taskResultHandler := messaging.CreateTaskResultHandler(service)
 	taskResultConsumer := cm.NewMessageConsumer(
 		queueManager,
-		cfg.QueueConfig.GenerateImageQueue,
+		cfg.QueueConfig.TaskResultQueue,
 		taskResultHandler,
 	)
 	go func() {
