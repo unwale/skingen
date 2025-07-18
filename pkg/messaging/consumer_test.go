@@ -55,6 +55,11 @@ func (m *mockAMQPChannel) Close() error {
 	return args.Error(0)
 }
 
+func (m *mockAMQPChannel) Cancel(consumer string, noWait bool) error {
+	args := m.Called(consumer, noWait)
+	return args.Error(0)
+}
+
 func TestStartConsuming(t *testing.T) {
 	manager := &mockChannelProvider{}
 	queueName := "queue"
@@ -68,9 +73,29 @@ func TestStartConsuming(t *testing.T) {
 	mockQueue := make(<-chan amqp091.Delivery)
 	manager.On("GetChannel").Return(mockChannel, nil)
 	mockChannel.On("QueueDeclare", queueName, true, false, false, false, mock.Anything).Return(amqp091.Queue{}, nil)
-	mockChannel.On("Consume", queueName, "", true, false, false, false, mock.Anything).Return(mockQueue, nil)
+	mockChannel.On("Consume", queueName, consumer.consumerTag, true, false, false, false, mock.Anything).Return(mockQueue, nil)
 
 	err := consumer.Start()
+
+	assert.NoError(t, err)
+	mockChannel.AssertExpectations(t)
+}
+
+func TestShutdown(t *testing.T) {
+	manager := &mockChannelProvider{}
+	queueName := "queue"
+	handler := func(msg amqp091.Delivery) error {
+		return nil
+	}
+
+	consumer := NewMessageConsumer(manager, queueName, handler)
+
+	mockChannel := new(mockAMQPChannel)
+	manager.On("GetChannel").Return(mockChannel, nil)
+	mockChannel.On("Close").Return(nil)
+	mockChannel.On("Cancel", consumer.consumerTag, false).Return(nil)
+
+	err := consumer.Shutdown()
 
 	assert.NoError(t, err)
 	mockChannel.AssertExpectations(t)

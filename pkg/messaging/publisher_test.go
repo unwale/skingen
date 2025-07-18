@@ -31,6 +31,11 @@ func (m *MockAMQPChannel) Close() error {
 	return args.Error(0)
 }
 
+func (m *MockAMQPChannel) Cancel(consumer string, noWait bool) error {
+	args := m.Called(consumer, noWait)
+	return args.Error(0)
+}
+
 func (m *MockAMQPChannel) QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args amqp091.Table) (amqp091.Queue, error) {
 	callArgs := m.Called(name, durable, autoDelete, exclusive, noWait, args)
 	return callArgs.Get(0).(amqp091.Queue), callArgs.Error(1)
