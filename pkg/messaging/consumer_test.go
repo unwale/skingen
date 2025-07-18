@@ -62,7 +62,7 @@ func TestStartConsuming(t *testing.T) {
 		return nil
 	}
 
-	consumer := NewTaskResultConsumer(manager, queueName, handler)
+	consumer := NewMessageConsumer(manager, queueName, handler)
 
 	mockChannel := new(mockAMQPChannel)
 	mockQueue := make(<-chan amqp091.Delivery)

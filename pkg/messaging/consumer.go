@@ -8,21 +8,21 @@ import (
 
 type MessageHandler func(msg amqp091.Delivery) error
 
-type TaskResultConsumer struct {
+type MessageConsumer struct {
 	manager   ChannelProvider
 	queueName string
 	handler   MessageHandler
 }
 
-func NewTaskResultConsumer(manager ChannelProvider, queueName string, handler MessageHandler) *TaskResultConsumer {
-	return &TaskResultConsumer{
+func NewMessageConsumer(manager ChannelProvider, queueName string, handler MessageHandler) *MessageConsumer {
+	return &MessageConsumer{
 		manager:   manager,
 		queueName: queueName,
 		handler:   handler,
 	}
 }
 
-func (c *TaskResultConsumer) Start() error {
+func (c *MessageConsumer) Start() error {
 	ch, err := c.manager.GetChannel()
 	if err != nil {
 		return err

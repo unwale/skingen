@@ -38,7 +38,7 @@ func main() {
 	handler := grpc.NewHandler(service)
 
 	taskResultHandler := messaging.CreateTaskResultHandler(service)
-	taskResultConsumer := cm.NewTaskResultConsumer(
+	taskResultConsumer := cm.NewMessageConsumer(
 		queueManager,
 		cfg.QueueConfig.GenerateImageQueue,
 		taskResultHandler,
