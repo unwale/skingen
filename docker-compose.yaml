@@ -1,4 +1,20 @@
 services:
+  worker:
+    build:
+      context: .
+      dockerfile: ./services/worker/Dockerfile
+    ports:
+      - "${WORKER_PORT}:${WORKER_PORT}"
+    environment:
+      - PORT=${WORKER_PORT}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@queue:${RABBITMQ_PORT}
+      - GENERATE_IMAGE_QUEUE=${GENERATE_IMAGE_QUEUE}
+      - TASK_RESULT_QUEUE=${TASK_RESULT_QUEUE}
+    depends_on:
+      queue:
+        condition: service_healthy
+    networks:
+      - skingen-network
 
   task-service:
     build:
