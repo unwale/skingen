@@ -73,7 +73,7 @@ func TestStartConsuming(t *testing.T) {
 	mockQueue := make(<-chan amqp091.Delivery)
 	manager.On("GetChannel").Return(mockChannel, nil)
 	mockChannel.On("QueueDeclare", queueName, true, false, false, false, mock.Anything).Return(amqp091.Queue{}, nil)
-	mockChannel.On("Consume", queueName, consumer.consumerTag, true, false, false, false, mock.Anything).Return(mockQueue, nil)
+	mockChannel.On("Consume", queueName, consumer.consumerTag, false, false, false, false, mock.Anything).Return(mockQueue, nil)
 
 	err := consumer.Start()
 

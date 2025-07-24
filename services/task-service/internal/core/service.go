@@ -61,7 +61,7 @@ func (s *taskServiceImpl) ProcessTaskResult(ctx context.Context, event contracts
 	} else {
 		task.Status = domain.TaskStatusCompleted
 	}
-	task.ResultURL = event.ImageURL
+	task.ObjectID = event.ObjectID
 	updatedTask, err := s.repo.UpdateTask(ctx, task)
 	if err != nil {
 		return domain.Task{}, err

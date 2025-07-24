@@ -30,14 +30,14 @@ func (w *workerServiceImpl) GenerateImage(ctx context.Context, request *contract
 	})
 	if err != nil {
 		return &contracts.GenerateImageEvent{
-			ImageURL: "",
+			ObjectID: "",
 			TaskID:   request.TaskID,
 			Status:   contracts.TaskStatusFailed,
 		}, err
 	}
 
 	event := &contracts.GenerateImageEvent{
-		ImageURL: string(response.ImageData),
+		ObjectID: string(response.ImageData),
 		TaskID:   request.TaskID,
 		Status:   contracts.TaskStatusCompleted,
 	}

@@ -14,6 +14,6 @@ type GenerateImageCommand struct {
 
 type GenerateImageEvent struct {
 	TaskID   uint   `json:"task_id"`
-	ImageURL string `json:"image_url"`
+	ObjectID string `json:"object_id"`
 	Status   string `json:"status"`
 }

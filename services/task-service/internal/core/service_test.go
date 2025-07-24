@@ -74,9 +74,9 @@ func TestProcessTaskResult(t *testing.T) {
 		event := contracts.GenerateImageEvent{
 			TaskID:   1,
 			Status:   domain.TaskStatusCompleted,
-			ImageURL: "image.png",
+			ObjectID: "0101",
 		}
-		expectedTask := domain.Task{ID: 1, Status: domain.TaskStatusCompleted, ResultURL: event.ImageURL}
+		expectedTask := domain.Task{ID: 1, Status: domain.TaskStatusCompleted, ObjectID: event.ObjectID}
 
 		mockRepo.On("GetTaskByID", mock.Anything, event.TaskID).Return(expectedTask, nil)
 		mockRepo.On("UpdateTask", mock.Anything, expectedTask).Return(expectedTask, nil)
@@ -86,7 +86,7 @@ func TestProcessTaskResult(t *testing.T) {
 
 		assert.Equal(t, expectedTask.ID, task.ID)
 		assert.Equal(t, expectedTask.Status, task.Status)
-		assert.Equal(t, expectedTask.ResultURL, task.ResultURL)
+		assert.Equal(t, expectedTask.ObjectID, task.ObjectID)
 		assert.Equal(t, expectedTask.Prompt, task.Prompt)
 
 		mockRepo.AssertExpectations(t)

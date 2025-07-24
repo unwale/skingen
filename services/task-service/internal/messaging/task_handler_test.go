@@ -32,10 +32,10 @@ func TestCreateTaskResultHandler(t *testing.T) {
 	event := contracts.GenerateImageEvent{
 		TaskID:   1,
 		Status:   domain.TaskStatusCompleted,
-		ImageURL: "http://example.com/image.png",
+		ObjectID: "http://example.com/image.png",
 	}
 	msg := amqp091.Delivery{
-		Body: []byte(`{"task_id":1,"status":"completed","image_url":"http://example.com/image.png"}`),
+		Body: []byte(`{"task_id":1,"status":"completed","object_id":"http://example.com/image.png"}`),
 	}
 	service.On("ProcessTaskResult", mock.Anything, event).Return(domain.Task{ID: 1}, nil)
 	err := handler(msg)
