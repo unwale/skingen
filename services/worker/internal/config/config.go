@@ -3,9 +3,10 @@ package config
 import "github.com/caarlos0/env/v10"
 
 type Config struct {
-	Port        string `env:"PORT,required"`
-	RabbitMQUrl string `env:"RABBITMQ_URL,required"`
-	QueueConfig QueueConfig
+	Port           string `env:"PORT,required"`
+	RabbitMQUrl    string `env:"RABBITMQ_URL,required"`
+	ModelServerUrl string `env:"MODEL_SERVER_URL,required"`
+	QueueConfig    QueueConfig
 }
 
 type QueueConfig struct {

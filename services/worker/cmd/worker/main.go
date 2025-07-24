@@ -7,9 +7,12 @@ import (
 	"syscall"
 
 	cm "github.com/unwale/skingen/pkg/messaging"
+	"github.com/unwale/skingen/services/worker/internal/adapters"
 	"github.com/unwale/skingen/services/worker/internal/config"
 	"github.com/unwale/skingen/services/worker/internal/core"
 	"github.com/unwale/skingen/services/worker/internal/messaging"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -22,7 +25,19 @@ func main() {
 	queueManager.Connect()
 	defer queueManager.Close()
 
-	service := core.NewWorkerService()
+	conn, err := grpc.NewClient(cfg.ModelServerUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to connect to task service: %v", err)
+	}
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Fatalf("Failed to close connection: %v", err)
+		}
+	}()
+
+	modelServerAdapter := adapters.NewTritonAdapter(conn)
+	publisher := cm.NewRabbitMQPublisher(queueManager)
+	service := core.NewWorkerService(modelServerAdapter, publisher, cfg.QueueConfig)
 	taskCommandHandler := messaging.CreateTaskCommandHandler(service)
 	taskConsumer := cm.NewMessageConsumer(
 		queueManager,

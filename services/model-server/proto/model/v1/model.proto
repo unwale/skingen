@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package model.v1;
+
+option go_package = "/services/model-server/generated/model/v1";
+
+service ImageGenerator {
+  rpc GenerateImage (GenerateImageRequest) returns (GenerateImageResponse);
+}
+
+message GenerateImageRequest {
+  string prompt = 1;
+}
+
+message GenerateImageResponse {
+  bytes image_data = 1;
+}

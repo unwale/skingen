@@ -1,4 +1,19 @@
 services:
+  model-server:
+    build:
+      context: .
+      dockerfile: ./services/model-server/Dockerfile
+    ports:
+      - "${MODEL_SERVER_PORT}:${MODEL_SERVER_PORT}"
+    environment:
+      - PORT=${MODEL_SERVER_PORT}
+      - MODEL_ID=${MODEL_ID}
+      - MODEL_DIR=/model
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - models:/model
+    networks:
+      - skingen-network
   worker:
     build:
       context: .
@@ -8,6 +23,7 @@ services:
     environment:
       - PORT=${WORKER_PORT}
       - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@queue:${RABBITMQ_PORT}
+      - MODEL_SERVER_URL=model-server:${MODEL_SERVER_PORT}
       - GENERATE_IMAGE_QUEUE=${GENERATE_IMAGE_QUEUE}
       - TASK_RESULT_QUEUE=${TASK_RESULT_QUEUE}
     depends_on:
@@ -108,3 +124,4 @@ networks:
 volumes:
   postgres_data:
   rabbitmq_data:
+  models:
