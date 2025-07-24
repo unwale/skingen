@@ -1,5 +1,3 @@
-// in internal/messaging/publisher.go
-
 package messaging
 
 import (

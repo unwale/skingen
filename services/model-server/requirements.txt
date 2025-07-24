@@ -1,0 +1,6 @@
+grpcio
+grpcio-tools
+onnxruntime
+huggingface-hub
+numpy
+Pillow

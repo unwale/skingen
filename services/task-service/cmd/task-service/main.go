@@ -7,6 +7,7 @@ import (
 
 	grpc_server "google.golang.org/grpc"
 
+	cm "github.com/unwale/skingen/pkg/messaging"
 	pb "github.com/unwale/skingen/services/task-service/generated/task/v1"
 	"github.com/unwale/skingen/services/task-service/internal/api/grpc"
 	"github.com/unwale/skingen/services/task-service/internal/config"
@@ -22,7 +23,7 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	queueManager := messaging.NewRabbitMQManager(cfg.RabbitMQUrl)
+	queueManager := cm.NewRabbitMQManager(cfg.RabbitMQUrl)
 	queueManager.Connect()
 	defer queueManager.Close()
 
@@ -31,12 +32,17 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	queuePublisher := messaging.NewRabbitMQPublisher(queueManager)
+	queuePublisher := cm.NewRabbitMQPublisher(queueManager)
 	repo := repository.NewTaskRepository(db)
 	service := core.NewTaskService(repo, queuePublisher, cfg.QueueConfig)
 	handler := grpc.NewHandler(service)
 
-	taskResultConsumer := messaging.NewTaskResultConsumer(queueManager, service, cfg.QueueConfig)
+	taskResultHandler := messaging.CreateTaskResultHandler(service)
+	taskResultConsumer := cm.NewMessageConsumer(
+		queueManager,
+		cfg.QueueConfig.TaskResultQueue,
+		taskResultHandler,
+	)
 	go func() {
 		if err := taskResultConsumer.Start(); err != nil {
 			log.Fatalf("Failed to start message consumer: %v", err)

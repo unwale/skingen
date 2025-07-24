@@ -8,9 +8,9 @@ import (
 
 type TaskDB struct {
 	gorm.Model
-	Prompt    string `gorm:"type:text;not null"`
-	Status    string `gorm:"type:varchar(20);not null;default:'pending'"`
-	ResultUrl string `gorm:"type:text"`
+	Prompt   string `gorm:"type:text;not null"`
+	Status   string `gorm:"type:varchar(20);not null;default:'pending'"`
+	ObjectID string `gorm:"type:text"`
 }
 
 func (t *TaskDB) TableName() string {
@@ -22,7 +22,7 @@ func (t *TaskDB) toDomain() *domain.Task {
 		ID:        t.ID,
 		Prompt:    t.Prompt,
 		Status:    t.Status,
-		ResultURL: t.ResultUrl,
+		ObjectID:  t.ObjectID,
 		CreatedAt: t.CreatedAt,
 		UpdatedAt: t.UpdatedAt,
 	}
@@ -35,8 +35,8 @@ func fromDomain(task *domain.Task) *TaskDB {
 			CreatedAt: task.CreatedAt,
 			UpdatedAt: task.UpdatedAt,
 		},
-		Prompt:    task.Prompt,
-		Status:    task.Status,
-		ResultUrl: task.ResultURL,
+		Prompt:   task.Prompt,
+		Status:   task.Status,
+		ObjectID: task.ObjectID,
 	}
 }

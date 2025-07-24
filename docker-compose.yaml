@@ -1,4 +1,40 @@
 services:
+  model-server:
+    build:
+      context: .
+      dockerfile: ./services/model-server/Dockerfile
+    ports:
+      - "${MODEL_SERVER_PORT}:${MODEL_SERVER_PORT}"
+    environment:
+      - PORT=${MODEL_SERVER_PORT}
+      - MODEL_ID=${MODEL_ID}
+      - MODEL_DIR=/model
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - models:/model
+    networks:
+      - skingen-network
+  worker:
+    build:
+      context: .
+      dockerfile: ./services/worker/Dockerfile
+    ports:
+      - "${WORKER_PORT}:${WORKER_PORT}"
+    environment:
+      - PORT=${WORKER_PORT}
+      - RABBITMQ_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@queue:${RABBITMQ_PORT}
+      - MODEL_SERVER_URL=model-server:${MODEL_SERVER_PORT}
+      - GENERATE_IMAGE_QUEUE=${GENERATE_IMAGE_QUEUE}
+      - TASK_RESULT_QUEUE=${TASK_RESULT_QUEUE}
+      - S3_ENDPOINT=minio:9000
+      - S3_ACCESS_KEY=${MINIO_WORKER_USER}
+      - S3_SECRET_KEY=${MINIO_WORKER_PASSWORD}
+      - S3_BUCKET=${SKIN_IMAGES_BUCKET}
+    depends_on:
+      queue:
+        condition: service_healthy
+    networks:
+      - skingen-network
 
   task-service:
     build:
@@ -85,6 +121,44 @@ services:
     networks:
       - skingen-network
 
+  minio:
+    image: minio/minio
+    ports:
+      - "${MINIO_PORT}:${MINIO_PORT}"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - skingen-network
+    healthcheck:
+      test: [ "CMD", "mc", "ls", "myminio" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-client:
+    image: minio/mc
+    entrypoint: /app/setup.sh
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - SKIN_IMAGES_BUCKET=${SKIN_IMAGES_BUCKET}
+      - MINIO_TASK_SERVICE_USER=${MINIO_TASK_SERVICE_USER}
+      - MINIO_TASK_SERVICE_PASSWORD=${MINIO_TASK_SERVICE_PASSWORD}
+      - MINIO_WORKER_USER=${MINIO_WORKER_USER}
+      - MINIO_WORKER_PASSWORD=${MINIO_WORKER_PASSWORD}
+    volumes:
+      - ./minio-setup:/app
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - skingen-network
+
 networks:
   skingen-network:
     driver: bridge
@@ -92,3 +166,5 @@ networks:
 volumes:
   postgres_data:
   rabbitmq_data:
+  models:
+  minio_data:

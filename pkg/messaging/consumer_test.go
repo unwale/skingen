@@ -7,9 +7,6 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/unwale/skingen/pkg/contracts"
-	"github.com/unwale/skingen/services/task-service/internal/config"
-	"github.com/unwale/skingen/services/task-service/internal/domain"
 )
 
 type mockChannelProvider struct {
@@ -22,20 +19,6 @@ func (m *mockChannelProvider) GetChannel() (AMQPChannel, error) {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(AMQPChannel), args.Error(1)
-}
-
-type mockTaskService struct {
-	mock.Mock
-}
-
-func (m *mockTaskService) ProcessTaskResult(ctx context.Context, event contracts.GenerateImageEvent) (domain.Task, error) {
-	args := m.Called(ctx, event)
-	return args.Get(0).(domain.Task), args.Error(1)
-}
-
-func (m *mockTaskService) CreateTask(ctx context.Context, prompt string) (domain.Task, error) {
-	args := m.Called(ctx, prompt)
-	return args.Get(0).(domain.Task), args.Error(1)
 }
 
 type mockAMQPChannel struct {
@@ -72,24 +55,48 @@ func (m *mockAMQPChannel) Close() error {
 	return args.Error(0)
 }
 
+func (m *mockAMQPChannel) Cancel(consumer string, noWait bool) error {
+	args := m.Called(consumer, noWait)
+	return args.Error(0)
+}
+
 func TestStartConsuming(t *testing.T) {
 	manager := &mockChannelProvider{}
-	service := &mockTaskService{}
-	queueConfig := config.QueueConfig{
-		TaskResultQueue: "task_results",
+	queueName := "queue"
+	handler := func(msg amqp091.Delivery) error {
+		return nil
 	}
 
-	consumer := NewTaskResultConsumer(manager, service, queueConfig)
+	consumer := NewMessageConsumer(manager, queueName, handler)
 
 	mockChannel := new(mockAMQPChannel)
 	mockQueue := make(<-chan amqp091.Delivery)
 	manager.On("GetChannel").Return(mockChannel, nil)
-	mockChannel.On("QueueDeclare", queueConfig.TaskResultQueue, true, false, false, false, mock.Anything).Return(amqp091.Queue{}, nil)
-	mockChannel.On("Consume", queueConfig.TaskResultQueue, "", true, false, false, false, mock.Anything).Return(mockQueue, nil)
+	mockChannel.On("QueueDeclare", queueName, true, false, false, false, mock.Anything).Return(amqp091.Queue{}, nil)
+	mockChannel.On("Consume", queueName, consumer.consumerTag, false, false, false, false, mock.Anything).Return(mockQueue, nil)
 
 	err := consumer.Start()
 
 	assert.NoError(t, err)
 	mockChannel.AssertExpectations(t)
-	service.AssertNumberOfCalls(t, "ProcessTaskResult", 0)
+}
+
+func TestShutdown(t *testing.T) {
+	manager := &mockChannelProvider{}
+	queueName := "queue"
+	handler := func(msg amqp091.Delivery) error {
+		return nil
+	}
+
+	consumer := NewMessageConsumer(manager, queueName, handler)
+
+	mockChannel := new(mockAMQPChannel)
+	manager.On("GetChannel").Return(mockChannel, nil)
+	mockChannel.On("Close").Return(nil)
+	mockChannel.On("Cancel", consumer.consumerTag, false).Return(nil)
+
+	err := consumer.Shutdown()
+
+	assert.NoError(t, err)
+	mockChannel.AssertExpectations(t)
 }

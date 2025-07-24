@@ -16,9 +16,9 @@ func TestToDomain(t *testing.T) {
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
-		Prompt:    "Test Prompt",
-		Status:    "pending",
-		ResultUrl: "http://example.com/result",
+		Prompt:   "Test Prompt",
+		Status:   "pending",
+		ObjectID: "http://example.com/result",
 	}
 
 	task := taskDB.toDomain()
@@ -26,7 +26,7 @@ func TestToDomain(t *testing.T) {
 	assert.Equal(t, taskDB.ID, task.ID)
 	assert.Equal(t, taskDB.Prompt, task.Prompt)
 	assert.Equal(t, taskDB.Status, task.Status)
-	assert.Equal(t, taskDB.ResultUrl, task.ResultURL)
+	assert.Equal(t, taskDB.ObjectID, task.ObjectID)
 	assert.Equal(t, taskDB.CreatedAt, task.CreatedAt)
 	assert.Equal(t, taskDB.UpdatedAt, task.UpdatedAt)
 }
@@ -36,7 +36,7 @@ func TestFromDomain(t *testing.T) {
 		ID:        1,
 		Prompt:    "Test Prompt",
 		Status:    "pending",
-		ResultURL: "http://example.com/result",
+		ObjectID:  "http://example.com/result",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -46,7 +46,7 @@ func TestFromDomain(t *testing.T) {
 	assert.Equal(t, task.ID, taskDB.ID)
 	assert.Equal(t, task.Prompt, taskDB.Prompt)
 	assert.Equal(t, task.Status, taskDB.Status)
-	assert.Equal(t, task.ResultURL, taskDB.ResultUrl)
+	assert.Equal(t, task.ObjectID, taskDB.ObjectID)
 	assert.Equal(t, task.CreatedAt, taskDB.CreatedAt)
 	assert.Equal(t, task.UpdatedAt, taskDB.UpdatedAt)
 }

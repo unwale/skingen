@@ -13,7 +13,7 @@ type Task struct {
 	ID        uint
 	Prompt    string
 	Status    string
-	ResultURL string
+	ObjectID  string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
