@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/unwale/skingen/pkg/contracts"
-	cm "github.com/unwale/skingen/pkg/messaging"
 	pb "github.com/unwale/skingen/services/model-server/generated/model/v1"
 	"github.com/unwale/skingen/services/worker/internal/config"
 )
@@ -15,11 +14,11 @@ import (
 type workerServiceImpl struct {
 	modelServer ModelServer
 	s3Client    S3Client
-	publisher   *cm.RabbitMQPublisher
+	publisher   MessagePublisher
 	config      *config.Config
 }
 
-func NewWorkerService(modelServer ModelServer, s3Client S3Client, publisher *cm.RabbitMQPublisher, cfg *config.Config) WorkerService {
+func NewWorkerService(modelServer ModelServer, s3Client S3Client, publisher MessagePublisher, cfg *config.Config) WorkerService {
 	return &workerServiceImpl{
 		modelServer: modelServer,
 		s3Client:    s3Client,
