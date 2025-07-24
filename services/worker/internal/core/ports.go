@@ -14,3 +14,7 @@ type WorkerService interface {
 type ModelServer interface {
 	GenerateImage(ctx context.Context, request *pb.GenerateImageRequest) (*pb.GenerateImageResponse, error)
 }
+
+type S3Client interface {
+	Upload(ctx context.Context, bucket string, key string, body []byte) error
+}

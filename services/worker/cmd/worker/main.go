@@ -6,6 +6,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/minio/minio-go/v7"
+	creds "github.com/minio/minio-go/v7/pkg/credentials"
+
 	cm "github.com/unwale/skingen/pkg/messaging"
 	"github.com/unwale/skingen/services/worker/internal/adapters"
 	"github.com/unwale/skingen/services/worker/internal/config"
@@ -20,6 +23,15 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to load configuration")
 	}
+
+	minioClient, err := minio.New(cfg.S3Config.Endpoint, &minio.Options{
+		Creds:  creds.NewStaticV4(cfg.S3Config.AccessKey, cfg.S3Config.SecretKey, ""),
+		Secure: false,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create S3 client: %v", err)
+	}
+	s3Client := adapters.NewS3ClientAdapter(minioClient)
 
 	queueManager := cm.NewRabbitMQManager(cfg.RabbitMQUrl)
 	queueManager.Connect()
@@ -37,7 +49,7 @@ func main() {
 
 	modelServerAdapter := adapters.NewTritonAdapter(conn)
 	publisher := cm.NewRabbitMQPublisher(queueManager)
-	service := core.NewWorkerService(modelServerAdapter, publisher, cfg.QueueConfig)
+	service := core.NewWorkerService(modelServerAdapter, s3Client, publisher, cfg)
 	taskCommandHandler := messaging.CreateTaskCommandHandler(service)
 	taskConsumer := cm.NewMessageConsumer(
 		queueManager,

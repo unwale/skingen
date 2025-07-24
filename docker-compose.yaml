@@ -26,6 +26,10 @@ services:
       - MODEL_SERVER_URL=model-server:${MODEL_SERVER_PORT}
       - GENERATE_IMAGE_QUEUE=${GENERATE_IMAGE_QUEUE}
       - TASK_RESULT_QUEUE=${TASK_RESULT_QUEUE}
+      - S3_ENDPOINT=minio:9000
+      - S3_ACCESS_KEY=${MINIO_WORKER_USER}
+      - S3_SECRET_KEY=${MINIO_WORKER_PASSWORD}
+      - S3_BUCKET=${SKIN_IMAGES_BUCKET}
     depends_on:
       queue:
         condition: service_healthy
@@ -121,12 +125,13 @@ services:
     image: minio/minio
     ports:
       - "${MINIO_PORT}:${MINIO_PORT}"
+      - "9001:9001"
     environment:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9001"
     volumes:
-      - minio:/data
+      - minio_data:/data
     networks:
       - skingen-network
     healthcheck:
@@ -162,4 +167,4 @@ volumes:
   postgres_data:
   rabbitmq_data:
   models:
-  minio:
+  minio_data:

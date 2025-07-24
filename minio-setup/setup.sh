@@ -2,7 +2,7 @@
 
 set -e
 
-until mc alias set myminio http://minio-server:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; do
+until mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; do
     echo "Waiting for MinIO server..."
     sleep 2
 done
@@ -10,7 +10,7 @@ done
 echo "MinIO server is ready. Starting setup."
 
 echo "Creating bucket 'skin-images'..."
-mc mb ${SKIN_IMAGES_BUCKET} --ignore-existing
+mc mb myminio/${SKIN_IMAGES_BUCKET} --ignore-existing
 
 echo "Creating policies..."
 mc admin policy create myminio readonly-policy /app/policies/readonly.json

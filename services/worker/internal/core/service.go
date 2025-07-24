@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/google/uuid"
+
 	"github.com/unwale/skingen/pkg/contracts"
 	cm "github.com/unwale/skingen/pkg/messaging"
 	pb "github.com/unwale/skingen/services/model-server/generated/model/v1"
@@ -12,15 +14,17 @@ import (
 
 type workerServiceImpl struct {
 	modelServer ModelServer
+	s3Client    S3Client
 	publisher   *cm.RabbitMQPublisher
-	queueConfig config.QueueConfig
+	config      *config.Config
 }
 
-func NewWorkerService(modelServer ModelServer, publisher *cm.RabbitMQPublisher, cfg config.QueueConfig) WorkerService {
+func NewWorkerService(modelServer ModelServer, s3Client S3Client, publisher *cm.RabbitMQPublisher, cfg *config.Config) WorkerService {
 	return &workerServiceImpl{
 		modelServer: modelServer,
+		s3Client:    s3Client,
 		publisher:   publisher,
-		queueConfig: cfg,
+		config:      cfg,
 	}
 }
 
@@ -29,15 +33,25 @@ func (w *workerServiceImpl) GenerateImage(ctx context.Context, request *contract
 		Prompt: request.Prompt,
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	objectId := uuid.New().String() + ".png"
+
+	if err := w.s3Client.Upload(ctx, w.config.S3Config.Bucket, objectId, response.ImageData); err != nil {
+		return nil, err
+	}
+
+	if err != nil {
 		return &contracts.GenerateImageEvent{
-			ObjectID: "",
+			ObjectID: objectId,
 			TaskID:   request.TaskID,
 			Status:   contracts.TaskStatusFailed,
 		}, err
 	}
 
 	event := &contracts.GenerateImageEvent{
-		ObjectID: string(response.ImageData),
+		ObjectID: objectId,
 		TaskID:   request.TaskID,
 		Status:   contracts.TaskStatusCompleted,
 	}
@@ -46,7 +60,9 @@ func (w *workerServiceImpl) GenerateImage(ctx context.Context, request *contract
 		return nil, err
 	}
 
-	w.publisher.Publish(ctx, eventBody, w.queueConfig.TaskResultQueue)
+	if err := w.publisher.Publish(ctx, eventBody, w.config.QueueConfig.TaskResultQueue); err != nil {
+		return nil, err
+	}
 
 	return event, nil
 }
