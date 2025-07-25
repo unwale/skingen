@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/unwale/skingen/pkg/logging"
+	"github.com/unwale/skingen/pkg/contextutil"
 )
 
 func LoggingMiddleware(baseLogger *slog.Logger) func(http.Handler) http.Handler {
@@ -20,7 +20,8 @@ func LoggingMiddleware(baseLogger *slog.Logger) func(http.Handler) http.Handler 
 				slog.String("method", r.Method),
 				slog.String("url", r.URL.String()),
 			)
-			ctx := logging.WithLogger(r.Context(), logger)
+			ctx := contextutil.WithLogger(r.Context(), logger)
+			ctx = contextutil.WithCorrelationID(ctx, correlationID)
 			r = r.WithContext(ctx)
 
 			logger.Info("Starting request")
