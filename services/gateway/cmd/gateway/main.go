@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/unwale/skingen/pkg/logging"
 	"github.com/unwale/skingen/services/gateway/internal/adapters"
+	"github.com/unwale/skingen/services/gateway/internal/api/grpc/interceptors"
 	"github.com/unwale/skingen/services/gateway/internal/api/rest"
 	"github.com/unwale/skingen/services/gateway/internal/api/rest/middleware"
 	"github.com/unwale/skingen/services/gateway/internal/config"
@@ -24,7 +25,11 @@ func main() {
 	logger := logging.NewLogger(cfg.ServiceName, cfg.LoggingLevel)
 	logger.Info("Starting gateway service", "port", cfg.Port)
 
-	conn, err := grpc.NewClient(cfg.TaskServiceUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(
+		cfg.TaskServiceUrl,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(interceptors.CorrelationIDInterceptor()),
+	)
 	if err != nil {
 		logger.Error("Failed to connect to task service", "error", err)
 	}
