@@ -6,6 +6,8 @@ import (
 
 type Config struct {
 	Port             string `env:"PORT,required"`
+	ServiceName      string `env:"SERVICE_NAME" envDefault:"task-service"`
+	LoggingLevel     string `env:"LOGGING_LEVEL" envDefault:"info"`
 	PostgresHost     string `env:"POSTGRES_HOST,required"`
 	PostgresPort     string `env:"POSTGRES_PORT,required"`
 	PostgresUser     string `env:"POSTGRES_USER,required"`

@@ -7,9 +7,11 @@ import (
 
 	grpc_server "google.golang.org/grpc"
 
+	"github.com/unwale/skingen/pkg/logging"
 	cm "github.com/unwale/skingen/pkg/messaging"
 	pb "github.com/unwale/skingen/services/task-service/generated/task/v1"
 	"github.com/unwale/skingen/services/task-service/internal/api/grpc"
+	"github.com/unwale/skingen/services/task-service/internal/api/grpc/interceptors"
 	"github.com/unwale/skingen/services/task-service/internal/config"
 	"github.com/unwale/skingen/services/task-service/internal/core"
 	"github.com/unwale/skingen/services/task-service/internal/database"
@@ -23,6 +25,9 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	logger := logging.NewLogger(cfg.ServiceName, cfg.LoggingLevel)
+	logger.Info("Starting task service", "port", cfg.Port)
+
 	queueManager := cm.NewRabbitMQManager(cfg.RabbitMQUrl)
 	queueManager.Connect()
 	defer queueManager.Close()
@@ -34,7 +39,7 @@ func main() {
 
 	queuePublisher := cm.NewRabbitMQPublisher(queueManager)
 	repo := repository.NewTaskRepository(db)
-	service := core.NewTaskService(repo, queuePublisher, cfg.QueueConfig)
+	service := core.NewTaskService(repo, queuePublisher, cfg.QueueConfig, logger)
 	handler := grpc.NewHandler(service)
 
 	taskResultHandler := messaging.CreateTaskResultHandler(service)
@@ -54,7 +59,9 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	grpcServer := grpc_server.NewServer()
+	grpcServer := grpc_server.NewServer(
+		grpc_server.UnaryInterceptor(interceptors.LoggingInterceptor(logger)),
+	)
 	pb.RegisterTaskServiceServer(grpcServer, handler)
 
 	if err := grpcServer.Serve(lis); err != nil {
