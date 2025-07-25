@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/unwale/skingen/pkg/logging"
+	"github.com/unwale/skingen/pkg/contextutil"
 	taskpb "github.com/unwale/skingen/services/task-service/generated/task/v1"
 )
 
@@ -21,7 +21,7 @@ func NewGatewayService(taskService TaskServicePort, logger *slog.Logger) Gateway
 }
 
 func (s *gatewayServiceImpl) CreateTask(ctx context.Context, prompt string) (int, error) {
-	logger := logging.FromContextOrDefault(ctx, s.logger)
+	logger := contextutil.FromContextOrDefault(ctx, s.logger)
 
 	logger.Info("Calling Task Service", "method", "CreateTask", "prompt", prompt)
 

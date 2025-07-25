@@ -1,14 +1,9 @@
 package logging
 
 import (
-	"context"
 	"log/slog"
 	"os"
 )
-
-type contextKey struct{}
-
-var loggerKey = contextKey{}
 
 func NewLogger(serviceName string, level string) *slog.Logger {
 	var slogLevel slog.Level
@@ -33,15 +28,4 @@ func NewLogger(serviceName string, level string) *slog.Logger {
 	logger = logger.With(slog.String("service", serviceName))
 
 	return logger
-}
-
-func FromContextOrDefault(ctx context.Context, defaultLogger *slog.Logger) *slog.Logger {
-	if logger, ok := ctx.Value(loggerKey).(*slog.Logger); ok {
-		return logger
-	}
-	return defaultLogger
-}
-
-func WithLogger(ctx context.Context, logger *slog.Logger) context.Context {
-	return context.WithValue(ctx, loggerKey, logger)
 }
