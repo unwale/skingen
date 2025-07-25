@@ -34,7 +34,8 @@ func main() {
 
 	db, err := database.NewConnection(*cfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Error("Failed to connect to database", "error", err)
+		return
 	}
 
 	queuePublisher := cm.NewRabbitMQPublisher(queueManager)
@@ -42,7 +43,7 @@ func main() {
 	service := core.NewTaskService(repo, queuePublisher, cfg.QueueConfig, logger)
 	handler := grpc.NewHandler(service)
 
-	taskResultHandler := messaging.CreateTaskResultHandler(service)
+	taskResultHandler := messaging.CreateTaskResultHandler(service, logger)
 	taskResultConsumer := cm.NewMessageConsumer(
 		queueManager,
 		cfg.QueueConfig.TaskResultQueue,
@@ -50,13 +51,15 @@ func main() {
 	)
 	go func() {
 		if err := taskResultConsumer.Start(); err != nil {
-			log.Fatalf("Failed to start message consumer: %v", err)
+			logger.Error("Failed to start task result consumer", "error", err)
+			return
 		}
 	}()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.Port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logger.Error("Failed to listen", "error", err)
+		return
 	}
 
 	grpcServer := grpc_server.NewServer(
@@ -65,6 +68,7 @@ func main() {
 	pb.RegisterTaskServiceServer(grpcServer, handler)
 
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		logger.Error("Failed to start gRPC server", "error", err)
+		return
 	}
 }

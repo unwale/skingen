@@ -39,6 +39,7 @@ func LoggingInterceptor(baseLogger *slog.Logger) grpc.UnaryServerInterceptor {
 		)
 
 		ctx = contextutil.WithLogger(ctx, logger)
+		ctx = contextutil.WithCorrelationID(ctx, correlationID)
 
 		start := time.Now()
 

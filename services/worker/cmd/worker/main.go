@@ -9,6 +9,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	creds "github.com/minio/minio-go/v7/pkg/credentials"
 
+	"github.com/unwale/skingen/pkg/logging"
 	cm "github.com/unwale/skingen/pkg/messaging"
 	"github.com/unwale/skingen/services/worker/internal/adapters"
 	"github.com/unwale/skingen/services/worker/internal/config"
@@ -24,12 +25,16 @@ func main() {
 		log.Fatal("Failed to load configuration")
 	}
 
+	logger := logging.NewLogger(cfg.ServiceName, cfg.LoggingLevel)
+	logger.Info("Starting worker service", "port", cfg.Port)
+
 	minioClient, err := minio.New(cfg.S3Config.Endpoint, &minio.Options{
 		Creds:  creds.NewStaticV4(cfg.S3Config.AccessKey, cfg.S3Config.SecretKey, ""),
 		Secure: false,
 	})
 	if err != nil {
-		log.Fatalf("Failed to create S3 client: %v", err)
+		logger.Error("Failed to create MinIO client", "error", err)
+		return
 	}
 	s3Client := adapters.NewS3ClientAdapter(minioClient)
 
@@ -39,25 +44,29 @@ func main() {
 
 	conn, err := grpc.NewClient(cfg.ModelServerUrl, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("Failed to connect to task service: %v", err)
+		logger.Error("Failed to connect to model server", "error", err)
+		return
 	}
 	defer func() {
 		if err := conn.Close(); err != nil {
-			log.Fatalf("Failed to close connection: %v", err)
+			logger.Error("Failed to close gRPC connection", "error", err)
+		} else {
+			logger.Info("gRPC connection closed successfully")
 		}
 	}()
 
 	modelServerAdapter := adapters.NewTritonAdapter(conn)
 	publisher := cm.NewRabbitMQPublisher(queueManager)
-	service := core.NewWorkerService(modelServerAdapter, s3Client, publisher, cfg)
-	taskCommandHandler := messaging.CreateTaskCommandHandler(service)
+	service := core.NewWorkerService(modelServerAdapter, s3Client, publisher, cfg, logger)
+	taskCommandHandler := messaging.CreateTaskCommandHandler(service, logger)
 	taskConsumer := cm.NewMessageConsumer(
 		queueManager,
 		cfg.QueueConfig.GenerationQueue,
 		taskCommandHandler,
 	)
 	if err := taskConsumer.Start(); err != nil {
-		log.Fatalf("Failed to start task consumer: %v", err)
+		logger.Error("Failed to start message consumer", "error", err)
+		return
 	}
 
 	quit := make(chan os.Signal, 1)
@@ -65,10 +74,10 @@ func main() {
 
 	<-quit
 
-	log.Println("Shutting down worker service...")
+	logger.Info("Shutting down worker service gracefully")
 	if err := taskConsumer.Shutdown(); err != nil {
-		log.Fatalf("Failed to shutdown message consumer: %v", err)
+		logger.Error("Failed to shutdown message consumer", "error", err)
 	}
 	queueManager.Close()
-	log.Println("Worker service stopped gracefully")
+	logger.Info("Worker service shutdown complete")
 }

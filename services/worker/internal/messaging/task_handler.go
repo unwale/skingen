@@ -3,29 +3,34 @@ package messaging
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 
 	"github.com/rabbitmq/amqp091-go"
+	"github.com/unwale/skingen/pkg/contextutil"
 	"github.com/unwale/skingen/pkg/contracts"
 	"github.com/unwale/skingen/pkg/messaging"
 	"github.com/unwale/skingen/services/worker/internal/core"
 )
 
-func CreateTaskCommandHandler(service core.WorkerService) messaging.MessageHandler {
+func CreateTaskCommandHandler(service core.WorkerService, baseLogger *slog.Logger) messaging.MessageHandler {
 	return func(msg amqp091.Delivery) error {
+		logger := baseLogger.With("correlation_id", msg.CorrelationId)
+		ctx := contextutil.WithLogger(context.Background(), logger)
+		ctx = contextutil.WithCorrelationID(ctx, msg.CorrelationId)
+
 		var command contracts.GenerateImageCommand
 		if err := json.Unmarshal(msg.Body, &command); err != nil {
-			log.Printf("Failed to unmarshal message: %v", err)
+			logger.Error("Failed to unmarshal message", "error", err)
 			return err
 		}
 
-		event, err := service.GenerateImage(context.Background(), &command)
+		event, err := service.GenerateImage(ctx, &command)
 		if err != nil {
-			log.Printf("Failed to generate image: %v", err)
+			logger.Error("Failed to generate image", "error", err)
 			return err
 		}
 
-		log.Printf("Generated image event: %+v", event)
+		logger.Info("Image generated successfully", "task_id", event.TaskID)
 		return nil
 	}
 }

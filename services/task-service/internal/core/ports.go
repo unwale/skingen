@@ -19,5 +19,5 @@ type TaskRepository interface {
 }
 
 type MessagePublisher interface {
-	Publish(ctx context.Context, body []byte, queueName string) error
+	Publish(ctx context.Context, body []byte, queueName, correlationID string) error
 }

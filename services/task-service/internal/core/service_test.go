@@ -36,7 +36,7 @@ type mockPublisher struct {
 	mock.Mock
 }
 
-func (m *mockPublisher) Publish(ctx context.Context, body []byte, queueName string) error {
+func (m *mockPublisher) Publish(ctx context.Context, body []byte, queueName, correlationID string) error {
 	args := m.Called(ctx, body, queueName)
 	return args.Error(0)
 }
@@ -55,7 +55,7 @@ func TestCreateTask(t *testing.T) {
 	expectedTask := domain.Task{ID: 1, Prompt: prompt}
 
 	mockRepo.On("SaveTask", mock.Anything, mock.AnythingOfType("domain.Task")).Return(expectedTask, nil)
-	mockPublisher.On("Publish", mock.Anything, mock.AnythingOfType("[]uint8"), queueConfig.GenerateImageQueue).Return(nil)
+	mockPublisher.On("Publish", mock.Anything, mock.AnythingOfType("[]uint8"), queueConfig.GenerateImageQueue, mock.Anything).Return(nil)
 
 	task, err := taskService.CreateTask(context.Background(), prompt)
 	if err != nil {

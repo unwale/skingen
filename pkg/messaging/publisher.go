@@ -15,7 +15,7 @@ func NewRabbitMQPublisher(manager ChannelProvider) *RabbitMQPublisher {
 	return &RabbitMQPublisher{manager: manager}
 }
 
-func (p *RabbitMQPublisher) Publish(ctx context.Context, body []byte, queueName string) error {
+func (p *RabbitMQPublisher) Publish(ctx context.Context, body []byte, queueName, correlationID string) error {
 	ch, err := p.manager.GetChannel()
 	if err != nil {
 		return err
@@ -45,8 +45,9 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, body []byte, queueName 
 		false,     // mandatory
 		false,     // immediate
 		amqp091.Publishing{
-			ContentType: "application/json",
-			Body:        body,
+			ContentType:   "application/json",
+			CorrelationId: correlationID,
+			Body:          body,
 		},
 	)
 	if err != nil {

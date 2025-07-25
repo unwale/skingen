@@ -54,7 +54,7 @@ func (s *taskServiceImpl) CreateTask(ctx context.Context, prompt string) (domain
 		logger.Error("Failed to marshal generate image command", "error", err)
 		return domain.Task{}, err
 	}
-	err = s.publisher.Publish(ctx, body, s.queueConfig.GenerateImageQueue)
+	err = s.publisher.Publish(ctx, body, s.queueConfig.GenerateImageQueue, contextutil.CorrelationIDFromContext(ctx))
 	if err != nil {
 		logger.Error("Failed to publish message to queue", "error", err)
 		return domain.Task{}, err

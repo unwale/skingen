@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -71,6 +72,7 @@ func TestPublish(t *testing.T) {
 
 		ctx := context.Background()
 		queueName := "test_queue"
+		correlationID := uuid.New().String()
 		body := []byte(`{"message": "hello"}`)
 
 		mockProvider.On("GetChannel").Return(mockChannel, nil)
@@ -81,7 +83,7 @@ func TestPublish(t *testing.T) {
 		}).Return(nil)
 		mockChannel.On("Close").Return(nil)
 
-		err := publisher.Publish(ctx, body, queueName)
+		err := publisher.Publish(ctx, body, queueName, correlationID)
 
 		assert.NoError(t, err)
 		mockProvider.AssertExpectations(t)
@@ -95,7 +97,7 @@ func TestPublish(t *testing.T) {
 		expectedErr := errors.New("could not get channel")
 		mockProvider.On("GetChannel").Return(nil, expectedErr)
 
-		err := publisher.Publish(context.Background(), []byte("test"), "test_queue")
+		err := publisher.Publish(context.Background(), []byte("test"), "test_queue", "123")
 
 		assert.Error(t, err)
 		assert.Equal(t, expectedErr, err)
@@ -112,7 +114,7 @@ func TestPublish(t *testing.T) {
 		mockChannel.On("QueueDeclare", "test_queue", true, false, false, false, mock.Anything).Return(amqp091.Queue{}, expectedErr)
 		mockChannel.On("Close").Return(nil)
 
-		err := publisher.Publish(context.Background(), []byte("test"), "test_queue")
+		err := publisher.Publish(context.Background(), []byte("test"), "test_queue", "123")
 
 		assert.Error(t, err)
 		assert.Equal(t, expectedErr, err)
@@ -131,7 +133,7 @@ func TestPublish(t *testing.T) {
 		mockChannel.On("PublishWithContext", mock.Anything, "", "test_queue", false, false, mock.Anything).Return(expectedErr)
 		mockChannel.On("Close").Return(nil)
 
-		err := publisher.Publish(context.Background(), []byte("test"), "test_queue")
+		err := publisher.Publish(context.Background(), []byte("test"), "test_queue", "123")
 
 		assert.Error(t, err)
 		assert.Equal(t, expectedErr, err)

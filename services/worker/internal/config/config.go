@@ -4,6 +4,8 @@ import "github.com/caarlos0/env/v10"
 
 type Config struct {
 	Port           string `env:"PORT,required"`
+	ServiceName    string `env:"SERVICE_NAME" envDefault:"worker"`
+	LoggingLevel   string `env:"LOGGING_LEVEL" envDefault:"info"`
 	RabbitMQUrl    string `env:"RABBITMQ_URL,required"`
 	ModelServerUrl string `env:"MODEL_SERVER_URL,required"`
 	QueueConfig    QueueConfig
