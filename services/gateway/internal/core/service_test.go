@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -19,7 +21,8 @@ func (m *mockTaskService) CreateTask(ctx context.Context, req *taskpb.CreateTask
 
 func TestCreateTask(t *testing.T) {
 	mockTaskService := new(mockTaskService)
-	gatewayService := NewGatewayService(mockTaskService)
+	testLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	gatewayService := NewGatewayService(mockTaskService, testLogger)
 
 	prompt := "test prompt"
 	req := &taskpb.CreateTaskRequest{Prompt: prompt}
