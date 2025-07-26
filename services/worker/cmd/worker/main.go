@@ -38,7 +38,7 @@ func main() {
 	}
 	s3Client := adapters.NewS3ClientAdapter(minioClient)
 
-	queueManager := cm.NewRabbitMQManager(cfg.RabbitMQUrl)
+	queueManager := cm.NewRabbitMQManager(cfg.RabbitMQUrl, logger)
 	queueManager.Connect()
 	defer queueManager.Close()
 
@@ -56,13 +56,14 @@ func main() {
 	}()
 
 	modelServerAdapter := adapters.NewTritonAdapter(conn)
-	publisher := cm.NewRabbitMQPublisher(queueManager)
+	publisher := cm.NewRabbitMQPublisher(queueManager, logger)
 	service := core.NewWorkerService(modelServerAdapter, s3Client, publisher, cfg, logger)
 	taskCommandHandler := messaging.CreateTaskCommandHandler(service, logger)
 	taskConsumer := cm.NewMessageConsumer(
 		queueManager,
 		cfg.QueueConfig.GenerationQueue,
 		taskCommandHandler,
+		logger,
 	)
 	if err := taskConsumer.Start(); err != nil {
 		logger.Error("Failed to start message consumer", "error", err)

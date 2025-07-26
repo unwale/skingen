@@ -2,17 +2,21 @@ package messaging
 
 import (
 	"context"
-	"log"
+	"log/slog"
 
 	"github.com/rabbitmq/amqp091-go"
 )
 
 type RabbitMQPublisher struct {
 	manager ChannelProvider
+	logger  *slog.Logger
 }
 
-func NewRabbitMQPublisher(manager ChannelProvider) *RabbitMQPublisher {
-	return &RabbitMQPublisher{manager: manager}
+func NewRabbitMQPublisher(manager ChannelProvider, logger *slog.Logger) *RabbitMQPublisher {
+	return &RabbitMQPublisher{
+		manager: manager,
+		logger:  logger,
+	}
 }
 
 func (p *RabbitMQPublisher) Publish(ctx context.Context, body []byte, queueName, correlationID string) error {
@@ -22,7 +26,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, body []byte, queueName,
 	}
 	defer func() {
 		if err := ch.Close(); err != nil {
-			log.Printf("Failed to close channel: %v", err)
+			p.logger.Error("Failed to close channel", "error", err)
 		}
 	}()
 
@@ -54,6 +58,9 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, body []byte, queueName,
 		return err
 	}
 
-	log.Printf("Successfully published message to queue: %s", queueName)
+	p.logger.Info("Message published successfully",
+		"queue", queueName,
+		"correlation_id", correlationID,
+	)
 	return nil
 }

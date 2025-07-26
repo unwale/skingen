@@ -3,6 +3,8 @@ package messaging
 import (
 	"context"
 	"errors"
+	"io"
+	"log/slog"
 	"testing"
 
 	"github.com/google/uuid"
@@ -65,10 +67,11 @@ func (m *MockAMQPChannel) Nack(tag uint64, multiple, requeue bool) error {
 func TestPublish(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockProvider := new(MockChannelProvider)
 		mockChannel := new(MockAMQPChannel)
 
-		publisher := NewRabbitMQPublisher(mockProvider)
+		publisher := NewRabbitMQPublisher(mockProvider, logger)
 
 		ctx := context.Background()
 		queueName := "test_queue"
@@ -78,8 +81,9 @@ func TestPublish(t *testing.T) {
 		mockProvider.On("GetChannel").Return(mockChannel, nil)
 		mockChannel.On("QueueDeclare", queueName, true, false, false, false, mock.Anything).Return(amqp091.Queue{}, nil)
 		mockChannel.On("PublishWithContext", ctx, "", queueName, false, false, amqp091.Publishing{
-			ContentType: "application/json",
-			Body:        body,
+			ContentType:   "application/json",
+			CorrelationId: correlationID,
+			Body:          body,
 		}).Return(nil)
 		mockChannel.On("Close").Return(nil)
 
@@ -91,8 +95,9 @@ func TestPublish(t *testing.T) {
 	})
 
 	t.Run("failure on GetChannel", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockProvider := new(MockChannelProvider)
-		publisher := NewRabbitMQPublisher(mockProvider)
+		publisher := NewRabbitMQPublisher(mockProvider, logger)
 
 		expectedErr := errors.New("could not get channel")
 		mockProvider.On("GetChannel").Return(nil, expectedErr)
@@ -105,9 +110,10 @@ func TestPublish(t *testing.T) {
 	})
 
 	t.Run("failure on QueueDeclare", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockProvider := new(MockChannelProvider)
 		mockChannel := new(MockAMQPChannel)
-		publisher := NewRabbitMQPublisher(mockProvider)
+		publisher := NewRabbitMQPublisher(mockProvider, logger)
 
 		expectedErr := errors.New("permission denied for queue")
 		mockProvider.On("GetChannel").Return(mockChannel, nil)
@@ -123,9 +129,10 @@ func TestPublish(t *testing.T) {
 	})
 
 	t.Run("failure on PublishWithContext", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockProvider := new(MockChannelProvider)
 		mockChannel := new(MockAMQPChannel)
-		publisher := NewRabbitMQPublisher(mockProvider)
+		publisher := NewRabbitMQPublisher(mockProvider, logger)
 
 		expectedErr := errors.New("publish failed")
 		mockProvider.On("GetChannel").Return(mockChannel, nil)

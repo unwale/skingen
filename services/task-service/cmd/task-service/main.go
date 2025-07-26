@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"net"
 
 	grpc_server "google.golang.org/grpc"
@@ -26,9 +27,10 @@ func main() {
 	}
 
 	logger := logging.NewLogger(cfg.ServiceName, cfg.LoggingLevel)
+	slog.SetDefault(logger)
 	logger.Info("Starting task service", "port", cfg.Port)
 
-	queueManager := cm.NewRabbitMQManager(cfg.RabbitMQUrl)
+	queueManager := cm.NewRabbitMQManager(cfg.RabbitMQUrl, logger)
 	queueManager.Connect()
 	defer queueManager.Close()
 
@@ -38,7 +40,7 @@ func main() {
 		return
 	}
 
-	queuePublisher := cm.NewRabbitMQPublisher(queueManager)
+	queuePublisher := cm.NewRabbitMQPublisher(queueManager, logger)
 	repo := repository.NewTaskRepository(db)
 	service := core.NewTaskService(repo, queuePublisher, cfg.QueueConfig, logger)
 	handler := grpc.NewHandler(service)
@@ -48,6 +50,7 @@ func main() {
 		queueManager,
 		cfg.QueueConfig.TaskResultQueue,
 		taskResultHandler,
+		logger,
 	)
 	go func() {
 		if err := taskResultConsumer.Start(); err != nil {

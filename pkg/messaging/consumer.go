@@ -2,7 +2,7 @@ package messaging
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/google/uuid"
@@ -16,21 +16,26 @@ type MessageConsumer struct {
 	consumerTag string
 	queueName   string
 	handler     MessageHandler
+	logger      *slog.Logger
 }
 
-func NewMessageConsumer(manager ChannelProvider, queueName string, handler MessageHandler) *MessageConsumer {
+func NewMessageConsumer(manager ChannelProvider, queueName string, handler MessageHandler, logger *slog.Logger) *MessageConsumer {
 	consumerTag := generateConsumerTag()
+	logger = logger.With(slog.String("consumer_tag", consumerTag), slog.String("queue_name", queueName))
+	logger.Info("Creating new message consumer", "consumer_tag", consumerTag, "queue_name", queueName)
 	return &MessageConsumer{
 		manager:     manager,
 		consumerTag: consumerTag,
 		queueName:   queueName,
 		handler:     handler,
+		logger:      logger,
 	}
 }
 
 func (c *MessageConsumer) Start() error {
 	ch, err := c.manager.GetChannel()
 	if err != nil {
+		c.logger.Error("Failed to get channel", "error", err)
 		return err
 	}
 
@@ -43,6 +48,7 @@ func (c *MessageConsumer) Start() error {
 		nil,   // arguments
 	)
 	if err != nil {
+		c.logger.Error("Failed to declare queue", "error", err, "queue_name", c.queueName)
 		return err
 	}
 
@@ -56,21 +62,25 @@ func (c *MessageConsumer) Start() error {
 		nil,
 	)
 	if err != nil {
+		c.logger.Error("Failed to start consuming messages", "error", err, "queue_name", c.queueName)
 		return err
 	}
 
 	go func() {
 		for msg := range msgs {
+			logger := c.logger.With("correlation_id", msg.CorrelationId)
 			err := c.handler(msg)
 			if err != nil {
-				log.Printf("Error handling message: %v", err)
+				logger.Error("Error processing message", "error", err)
 				if nackErr := ch.Nack(msg.DeliveryTag, false, true); nackErr != nil {
-					log.Printf("Error nack'ing message: %v", nackErr)
+					logger.Error("Failed to nack message", "error", nackErr)
 				}
 				continue
 			}
 			if err := msg.Ack(false); err != nil {
-				log.Printf("Error acknowledging message: %v", err)
+				logger.Error("Failed to ack message", "error", err)
+			} else {
+				logger.Info("Message processed successfully")
 			}
 		}
 	}()
@@ -81,19 +91,21 @@ func (c *MessageConsumer) Start() error {
 func (c *MessageConsumer) Shutdown() error {
 	ch, err := c.manager.GetChannel()
 	if err != nil {
+		c.logger.Error("Failed to get channel for shutdown", "error", err)
 		return err
 	}
 	defer func() {
 		if err := ch.Close(); err != nil {
-			log.Printf("Failed to close channel: %v", err)
+			c.logger.Error("Failed to close channel during shutdown", "error", err)
 		}
 	}()
 
 	if err := ch.Cancel(c.consumerTag, false); err != nil {
-		return fmt.Errorf("failed to cancel consumer: %w", err)
+		c.logger.Error("Failed to cancel consumer", "error", err)
+		return err
 	}
 
-	log.Printf("Consumer %s for queue %s has been shut down", c.consumerTag, c.queueName)
+	c.logger.Info("Message consumer shutdown successfully", "consumer_tag", c.consumerTag, "queue_name", c.queueName)
 	return nil
 }
 
@@ -101,7 +113,7 @@ func generateConsumerTag() string {
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "unknown-host"
-		log.Printf("Failed to get hostname: %v", err)
+		slog.Warn("Failed to get hostname, using 'unknown-host'", "error", err)
 	}
 
 	pid := os.Getpid()
