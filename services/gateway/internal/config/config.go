@@ -6,6 +6,8 @@ import (
 
 type Config struct {
 	Port           string `env:"PORT,required"`
+	ServiceName    string `env:"SERVICE_NAME" envDefault:"gateway"`
+	LoggingLevel   string `env:"LOGGING_LEVEL" envDefault:"info"`
 	TaskServiceUrl string `env:"TASK_SERVICE_URL,required"`
 }
 

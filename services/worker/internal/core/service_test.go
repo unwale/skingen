@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"io"
+	"log/slog"
 
 	"testing"
 
@@ -38,13 +40,14 @@ type mockRabbitMQPublisher struct {
 	mock.Mock
 }
 
-func (m *mockRabbitMQPublisher) Publish(ctx context.Context, body []byte, queueName string) error {
+func (m *mockRabbitMQPublisher) Publish(ctx context.Context, body []byte, queueName, correlationID string) error {
 	args := m.Called(ctx, body, queueName)
 	return args.Error(0)
 }
 
 func TestGenerateImage(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockModelServer := new(mockModelServer)
 		mockS3Client := new(mockS3Client)
 		mockPublisher := new(mockRabbitMQPublisher)
@@ -57,7 +60,7 @@ func TestGenerateImage(t *testing.T) {
 			},
 		}
 
-		service := NewWorkerService(mockModelServer, mockS3Client, mockPublisher, cfg)
+		service := NewWorkerService(mockModelServer, mockS3Client, mockPublisher, cfg, logger)
 
 		request := &contracts.GenerateImageCommand{
 			Prompt: "test prompt",
@@ -66,7 +69,7 @@ func TestGenerateImage(t *testing.T) {
 
 		mockModelServer.On("GenerateImage", mock.Anything, mock.Anything).Return(&pb.GenerateImageResponse{ImageData: []byte("image data")}, nil)
 		mockS3Client.On("Upload", mock.Anything, cfg.S3Config.Bucket, mock.AnythingOfType("string"), []byte("image data")).Return(nil)
-		mockPublisher.On("Publish", mock.Anything, mock.AnythingOfType("[]uint8"), cfg.QueueConfig.TaskResultQueue).Return(nil)
+		mockPublisher.On("Publish", mock.Anything, mock.AnythingOfType("[]uint8"), cfg.QueueConfig.TaskResultQueue, mock.Anything).Return(nil)
 
 		event, err := service.GenerateImage(context.Background(), request)
 
@@ -81,12 +84,13 @@ func TestGenerateImage(t *testing.T) {
 	})
 
 	t.Run("model server error", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockModelServer := new(mockModelServer)
 		mockS3Client := new(mockS3Client)
 		mockPublisher := new(mockRabbitMQPublisher)
 		cfg := &config.Config{}
 
-		service := NewWorkerService(mockModelServer, mockS3Client, mockPublisher, cfg)
+		service := NewWorkerService(mockModelServer, mockS3Client, mockPublisher, cfg, logger)
 
 		request := &contracts.GenerateImageCommand{
 			Prompt: "test prompt",
@@ -106,6 +110,7 @@ func TestGenerateImage(t *testing.T) {
 	})
 
 	t.Run("s3 upload error", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockModelServer := new(mockModelServer)
 		mockS3Client := new(mockS3Client)
 		mockPublisher := new(mockRabbitMQPublisher)
@@ -118,7 +123,7 @@ func TestGenerateImage(t *testing.T) {
 			},
 		}
 
-		service := NewWorkerService(mockModelServer, mockS3Client, mockPublisher, cfg)
+		service := NewWorkerService(mockModelServer, mockS3Client, mockPublisher, cfg, logger)
 
 		request := &contracts.GenerateImageCommand{
 			Prompt: "test prompt",
@@ -139,6 +144,7 @@ func TestGenerateImage(t *testing.T) {
 	})
 
 	t.Run("publisher error", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockModelServer := new(mockModelServer)
 		mockS3Client := new(mockS3Client)
 		mockPublisher := new(mockRabbitMQPublisher)
@@ -151,7 +157,7 @@ func TestGenerateImage(t *testing.T) {
 			},
 		}
 
-		service := NewWorkerService(mockModelServer, mockS3Client, mockPublisher, cfg)
+		service := NewWorkerService(mockModelServer, mockS3Client, mockPublisher, cfg, logger)
 
 		request := &contracts.GenerateImageCommand{
 			Prompt: "test prompt",
@@ -160,7 +166,7 @@ func TestGenerateImage(t *testing.T) {
 
 		mockModelServer.On("GenerateImage", mock.Anything, mock.Anything).Return(&pb.GenerateImageResponse{ImageData: []byte("image data")}, nil)
 		mockS3Client.On("Upload", mock.Anything, cfg.S3Config.Bucket, mock.AnythingOfType("string"), []byte("image data")).Return(nil)
-		mockPublisher.On("Publish", mock.Anything, mock.AnythingOfType("[]uint8"), cfg.QueueConfig.TaskResultQueue).Return(assert.AnError)
+		mockPublisher.On("Publish", mock.Anything, mock.AnythingOfType("[]uint8"), cfg.QueueConfig.TaskResultQueue, mock.Anything).Return(assert.AnError)
 
 		event, err := service.GenerateImage(context.Background(), request)
 

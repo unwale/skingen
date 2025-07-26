@@ -3,6 +3,8 @@ package messaging
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"testing"
 
 	"github.com/rabbitmq/amqp091-go"
@@ -25,6 +27,7 @@ func (m *mockWorkerService) GenerateImage(ctx context.Context, request *contract
 
 func TestCreateTaskCommandHandler(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockService := new(mockWorkerService)
 		command := &contracts.GenerateImageCommand{
 			TaskID: 1,
@@ -38,7 +41,7 @@ func TestCreateTaskCommandHandler(t *testing.T) {
 
 		mockService.On("GenerateImage", mock.Anything, command).Return(event, nil)
 
-		handler := CreateTaskCommandHandler(mockService)
+		handler := CreateTaskCommandHandler(mockService, logger)
 
 		msgBody, _ := json.Marshal(command)
 		msg := amqp091.Delivery{Body: msgBody}
@@ -52,6 +55,7 @@ func TestCreateTaskCommandHandler(t *testing.T) {
 	})
 
 	t.Run("failure", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockService := new(mockWorkerService)
 		command := &contracts.GenerateImageCommand{
 			TaskID: 1,
@@ -60,7 +64,7 @@ func TestCreateTaskCommandHandler(t *testing.T) {
 
 		mockService.On("GenerateImage", mock.Anything, command).Return(nil, assert.AnError)
 
-		handler := CreateTaskCommandHandler(mockService)
+		handler := CreateTaskCommandHandler(mockService, logger)
 
 		msgBody, _ := json.Marshal(command)
 		msg := amqp091.Delivery{Body: msgBody}

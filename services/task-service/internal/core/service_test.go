@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,25 +36,26 @@ type mockPublisher struct {
 	mock.Mock
 }
 
-func (m *mockPublisher) Publish(ctx context.Context, body []byte, queueName string) error {
+func (m *mockPublisher) Publish(ctx context.Context, body []byte, queueName, correlationID string) error {
 	args := m.Called(ctx, body, queueName)
 	return args.Error(0)
 }
 
 func TestCreateTask(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	mockRepo := new(mockRepository)
 	mockPublisher := new(mockPublisher)
 	queueConfig := config.QueueConfig{
 		GenerateImageQueue: "generate_image_queue",
 		TaskResultQueue:    "task_result_queue",
 	}
-	taskService := NewTaskService(mockRepo, mockPublisher, queueConfig)
+	taskService := NewTaskService(mockRepo, mockPublisher, queueConfig, logger)
 
 	prompt := "test prompt"
 	expectedTask := domain.Task{ID: 1, Prompt: prompt}
 
 	mockRepo.On("SaveTask", mock.Anything, mock.AnythingOfType("domain.Task")).Return(expectedTask, nil)
-	mockPublisher.On("Publish", mock.Anything, mock.AnythingOfType("[]uint8"), queueConfig.GenerateImageQueue).Return(nil)
+	mockPublisher.On("Publish", mock.Anything, mock.AnythingOfType("[]uint8"), queueConfig.GenerateImageQueue, mock.Anything).Return(nil)
 
 	task, err := taskService.CreateTask(context.Background(), prompt)
 	if err != nil {
@@ -68,8 +71,9 @@ func TestCreateTask(t *testing.T) {
 
 func TestProcessTaskResult(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockRepo := new(mockRepository)
-		taskService := NewTaskService(mockRepo, nil, config.QueueConfig{})
+		taskService := NewTaskService(mockRepo, nil, config.QueueConfig{}, logger)
 
 		event := contracts.GenerateImageEvent{
 			TaskID:   1,
@@ -93,8 +97,9 @@ func TestProcessTaskResult(t *testing.T) {
 	})
 
 	t.Run("task not found", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockRepo := new(mockRepository)
-		taskService := NewTaskService(mockRepo, nil, config.QueueConfig{})
+		taskService := NewTaskService(mockRepo, nil, config.QueueConfig{}, logger)
 
 		event := contracts.GenerateImageEvent{
 			TaskID: 1,
@@ -111,8 +116,9 @@ func TestProcessTaskResult(t *testing.T) {
 	})
 
 	t.Run("update task error", func(t *testing.T) {
+		logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 		mockRepo := new(mockRepository)
-		taskService := NewTaskService(mockRepo, nil, config.QueueConfig{})
+		taskService := NewTaskService(mockRepo, nil, config.QueueConfig{}, logger)
 
 		event := contracts.GenerateImageEvent{
 			TaskID: 1,

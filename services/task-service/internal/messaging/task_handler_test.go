@@ -2,6 +2,8 @@ package messaging
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"testing"
 
 	"github.com/rabbitmq/amqp091-go"
@@ -26,8 +28,9 @@ func (m *mockTaskService) CreateTask(ctx context.Context, prompt string) (domain
 }
 
 func TestCreateTaskResultHandler(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	service := new(mockTaskService)
-	handler := CreateTaskResultHandler(service)
+	handler := CreateTaskResultHandler(service, logger)
 
 	event := contracts.GenerateImageEvent{
 		TaskID:   1,

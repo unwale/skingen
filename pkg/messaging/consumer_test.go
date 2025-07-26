@@ -2,6 +2,8 @@ package messaging
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"testing"
 
 	"github.com/rabbitmq/amqp091-go"
@@ -61,13 +63,14 @@ func (m *mockAMQPChannel) Cancel(consumer string, noWait bool) error {
 }
 
 func TestStartConsuming(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	manager := &mockChannelProvider{}
 	queueName := "queue"
 	handler := func(msg amqp091.Delivery) error {
 		return nil
 	}
 
-	consumer := NewMessageConsumer(manager, queueName, handler)
+	consumer := NewMessageConsumer(manager, queueName, handler, logger)
 
 	mockChannel := new(mockAMQPChannel)
 	mockQueue := make(<-chan amqp091.Delivery)
@@ -82,13 +85,14 @@ func TestStartConsuming(t *testing.T) {
 }
 
 func TestShutdown(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	manager := &mockChannelProvider{}
 	queueName := "queue"
 	handler := func(msg amqp091.Delivery) error {
 		return nil
 	}
 
-	consumer := NewMessageConsumer(manager, queueName, handler)
+	consumer := NewMessageConsumer(manager, queueName, handler, logger)
 
 	mockChannel := new(mockAMQPChannel)
 	manager.On("GetChannel").Return(mockChannel, nil)
